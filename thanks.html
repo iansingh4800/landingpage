@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>StockHours</title>
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <style>
+      .thanks { min-height: 100vh; display: grid; place-items: center; padding: 3rem 1rem; text-align: center; }
+      .thanks__card { max-width: 32rem; }
+      .thanks__card img { border-radius: 50%; }
+      .thanks__card .h2 { margin-top: 1.2rem; }
+      .thanks__card p { color: var(--dim); font-size: 1.05rem; margin: 1rem 0 1.8rem; }
+      .thanks__steps { list-style: none; margin: 0 0 2rem; padding: 0; display: grid; gap: .6rem; text-align: left; }
+      .thanks__steps li { padding: .8rem 1rem; border-radius: 12px; background: var(--card); border: 1px solid var(--line); color: var(--dim); }
+      .thanks__steps b { color: var(--gold); margin-right: .4rem; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <main class="thanks">
+      <div class="thanks__card">
+        <img src="/assets/img/logo.webp" alt="StockHours" width="84" height="84" />
+        <h1 id="title" class="h2">Checking your payment</h1>
+        <p id="message">One sec…</p>
+        <ol class="thanks__steps" id="steps" hidden>
+          <li><b>1</b>Open the Whop app or whop.com and sign in with the email you used.</li>
+          <li><b>2</b>Open StockHours. The Signals Chat is unlocked.</li>
+          <li><b>3</b>Turn on notifications so you catch every alert, and be there for tonight's 8pm ET lesson.</li>
+        </ol>
+        <a id="action" class="btn btn--xl" href="/">Back</a>
+      </div>
+    </main>
+
+    <script>
+      // Landing page after Whop checkout.
+      //  - Checkout Element returnUrl:  ?payment=pay_…&status=succeeded|failed|canceled
+      //  - Checkout link redirect URL:  ?payment_id=pay_…
+      // These query params are hints only, never proof of payment. Access is granted
+      // by Whop (membership), and fulfilment should come from Whop webhooks.
+      (function () {
+        var q = new URLSearchParams(window.location.search);
+        var status = q.get("status");
+        var passName =
+          {
+            signals: "the Signals Chat",
+            "signals-3mo": "3 months of the Signals Chat",
+            vip: "the VIP Bundle",
+            "vip-3mo": "3 months of the VIP Bundle",
+            free: "the free StockHours Discord",
+          }[q.get("item")] || "your membership";
+        var hasPaymentId = /^pay_[A-Za-z0-9]+$/.test(q.get("payment_id") || "");
+        var title = document.getElementById("title");
+        var message = document.getElementById("message");
+        var action = document.getElementById("action");
+        var steps = document.getElementById("steps");
+
+        function set(t, m, label, href, newTab) {
+          title.textContent = t;
+          message.textContent = m;
+          action.textContent = label;
+          action.setAttribute("href", href);
+          if (newTab) {
+            action.setAttribute("target", "_blank");
+            action.setAttribute("rel", "noreferrer");
+          }
+        }
+
+        if (status === "succeeded" || (!status && hasPaymentId)) {
+          set("You're in.", "Thanks for grabbing " + passName + ". Here's how to get to it, and your receipt is in your email.", "Open Whop", "https://whop.com/", true);
+          steps.hidden = false;
+        } else if (status === "failed") {
+          set("Payment didn't go through", "Your bank didn't approve it and you weren't charged for this attempt. Try again or use a different card.", "Try again", "/#join");
+        } else if (status === "canceled") {
+          set("Payment canceled", "No worries, nothing went through. You can pick it back up anytime.", "Back to checkout", "/#join");
+        } else {
+          set("Nothing to show here", "If you just paid, your access shows up on your Whop account and in your email receipt.", "Back", "/");
+        }
+
+        // Strip payment ids from the address bar so they don't end up in shared links or analytics.
+        if (window.history && history.replaceState && window.location.search) {
+          history.replaceState(null, "", window.location.pathname);
+        }
+      })();
+    </script>
+  </body>
+</html>
